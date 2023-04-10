@@ -16,8 +16,8 @@ CREATE TABLE tmp.file1 AS ^
 SELECT ^
   hs.id_global, ^
   AgLibraryFolder.pathFromRoot^|^|AgLibraryFile.baseName AS path, ^
-  MAX(DATETIME(hs.dateCreated+978310800+3600,'unixepoch')) AS date, ^
-  CASE touchTime WHEN 0 THEN "0" ELSE DATETIME(touchTime+978310800+3600,'unixepoch') END AS tdate, ^
+  MAX(DATETIME(hs.dateCreated + 978310800 + 3600,'unixepoch')) AS date, ^
+  CASE touchTime WHEN 0 THEN "0" ELSE DATETIME(touchTime + 978310800 + 3600,'unixepoch') END AS tdate, ^
   CASE WHEN hs.name LIKE 'Import%%' THEN hs.name ELSE hs.name ^|^| COALESCE (': ' ^|^| hs.relValueString, '') END AS val  ^
 FROM ^
   lrcat1.Adobe_libraryImageDevelopHistoryStep AS hs ^
@@ -34,8 +34,8 @@ CREATE TABLE tmp.file2 AS ^
 SELECT ^
   hs.id_global, ^
   AgLibraryFolder.pathFromRoot^|^|AgLibraryFile.baseName AS path, ^
-  MAX(DATETIME(hs.dateCreated+978310800+3600,'unixepoch')) AS date, ^
-  CASE touchTime WHEN 0 THEN "0" ELSE DATETIME(touchTime+978310800+3600,'unixepoch') END AS tdate, ^
+  MAX(DATETIME(hs.dateCreated + 978310800 + 3600,'unixepoch')) AS date, ^
+  CASE touchTime WHEN 0 THEN "0" ELSE DATETIME(touchTime + 978310800 + 3600,'unixepoch') END AS tdate, ^
   CASE WHEN hs.name LIKE 'Import%%' THEN hs.name ELSE hs.name ^|^| COALESCE (': ' ^|^| hs.relValueString, '') END AS val  ^
 FROM ^
   lrcat2.Adobe_libraryImageDevelopHistoryStep AS hs ^
@@ -58,6 +58,7 @@ CREATE TABLE tmp.sum AS ^
  FROM file2 ^
  LEFT JOIN file1 USING(path) WHERE file1.date IS NULL ^
 ; ^
+ ^
 SELECT path, ^
  CASE ^
   WHEN edate2 IS NULL THEN 'L-only' ^
