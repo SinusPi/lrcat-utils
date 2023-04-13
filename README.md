@@ -10,9 +10,9 @@ Needs Windows, and SQLite.
 
 ## INSTALLATION
 
-* Download **lrcat_diff.bat** to a folder of your choice.
+* Download **lrcat_diff.bat** or **lrcat_diff.ps1** to a folder of your choice.
 * Download **SQLite3** from https://www.sqlite.org/download.html.
-* Put **SQLite3.exe** in the same folder as **lrcat_diff.bat**.
+* Put **SQLite3.exe** in the same folder as **lrcat_diff.bat/ps1**.
 
 ## USAGE
 
@@ -20,7 +20,14 @@ Run with arguments:
 
 `lrcat_diff.bat catalog-a.lrcat catalog-b.lrcat`
 
-If catalogs are properly read, you should eventually see a table with columns of: `path`, `diff`, `tdate1`, `edate1`, `edit1`, `tdate2`, `edate2`, `edit2`.
+or
+
+`powershell -file lrcat_diff.ps1 -left catalog-a.lrcat -right catalog-b.lrcat`
+
+(though for the latter you may need to enable PowerShell file execution; google for `set-executionpolicy remotesigned`.)
+
+
+If catalogs are properly read, you should eventually see a table with columns of: `path`, `diff`, `tdate1`, `edate1`, `edits1`, `lastedit1`, `keywords1` and `pick1`, and, respectively, `tdate2` and so on.
 
 The first two columns matter the most. The pictures' path are in the `path` column, and the `diff` column has values of:
 
@@ -29,7 +36,15 @@ The first two columns matter the most. The pictures' path are in the `path` colu
 * **L-only** : picture exists only in the left file
 * **R-only** : picture exists only in the right file
 
-The other columns store the touch-dates, edit-dates (edits are entries in the Develop module, while touch-dates are updated when picture metadata is edited), as well as a caption of the most recent edit.
+The other columns are:
+* `tdate` : when the photo's metadata was last updated
+* `edate` : when last develop edits were applied
+* `edits` : how many develop edits there are
+* `lastedit` : what was the last edit
+* `keywords` : keywords on the photo
+* `pick` : pick-or-reject flag
+
+When you've decided which photos need importing, just open one of the catalogs in Lightroom and Import photos from the other one. Note that metadata will be OVERWRITTEN, not merged.
 
 ## CAVEATS
 
@@ -39,5 +54,5 @@ The other columns store the touch-dates, edit-dates (edits are entries in the De
 ## FURTHER DEVELOPMENT
 
 - [ ] Detect conflicts. (Feasible. Check if pictures' edits have a common ancestor.)
-- [ ] Port to Linux/Mac. (The script is just several SQLite queries wrapped in presentation code, should be trivial.)
+- [ ] Port to Linux/Mac/Web. (The script is just several SQLite queries wrapped in presentation code, should be trivial.)
 - [ ] Maybe make a 3-way diff? One day. If.
