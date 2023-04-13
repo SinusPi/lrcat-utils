@@ -27,6 +27,7 @@ SELECT ^
   adobe_images.id_global AS id, ^
   AgLibraryFolder.pathFromRoot^|^|AgLibraryFile.baseName AS path, ^
   MAX(DATETIME(hs.dateCreated + 978310800 + 3600,'unixepoch')) AS date, ^
+  COUNT(hs.id_global) AS edits, ^
   CASE touchTime WHEN 0 THEN "0" ELSE DATETIME(touchTime + 978310800 + 3600,'unixepoch') END AS tdate, ^
   CASE WHEN hs.name LIKE 'Import%%' THEN hs.name ELSE hs.name ^|^| COALESCE (': ' ^|^| hs.relValueString, '') END AS val  ^
 FROM ^
@@ -37,7 +38,7 @@ LEFT JOIN AgLibraryFolder on AgLibraryFolder.id_local=AgLibraryFile.folder ^
 GROUP BY id ^
 ORDER BY date DESC; ^
 DETACH lrcat1; ^
- ^
+ ^ 
 ATTACH 'file:%FN2U%^?readonly=1^&immutable=1' AS lrcat2; ^
 DROP TABLE IF EXISTS tmp.file2; ^
 CREATE TABLE tmp.file2 AS ^
@@ -45,6 +46,7 @@ SELECT ^
   adobe_images.id_global AS id, ^
   AgLibraryFolder.pathFromRoot^|^|AgLibraryFile.baseName AS path, ^
   MAX(DATETIME(hs.dateCreated + 978310800 + 3600,'unixepoch')) AS date, ^
+  COUNT(hs.id_global) AS edits, ^
   CASE touchTime WHEN 0 THEN "0" ELSE DATETIME(touchTime + 978310800 + 3600,'unixepoch') END AS tdate, ^
   CASE WHEN hs.name LIKE 'Import%%' THEN hs.name ELSE hs.name ^|^| COALESCE (': ' ^|^| hs.relValueString, '') END AS val  ^
 FROM ^
@@ -58,13 +60,13 @@ DETACH lrcat2; ^
  ^
 DROP TABLE IF EXISTS tmp.sum; ^
 CREATE TABLE tmp.sum AS ^
- SELECT file1.path AS path, file1.date AS edate1, file1.tdate AS tdate1, file1.val AS edit1, file2.date AS edate2, file2.tdate AS tdate2, file2.val AS edit2 ^
+ SELECT file1.path AS path, file1.date AS edate1, file1.tdate AS tdate1, file1.edits as edits1, file1.val AS lastedit1, file2.date AS edate2, file2.tdate AS tdate2, file2.edits as edits2, file2.val AS lastedit2,  ^
  FROM file1 ^
  LEFT JOIN file2 USING(id) ^
  ^
  UNION ^
  ^
- SELECT file2.path AS path, file1.date AS edate1, file1.tdate AS tdate1, file1.val AS edit1, file2.date AS edate2, file2.tdate AS tdate2, file2.val AS edit2 ^
+ SELECT file2.path AS path, file1.date AS edate1, file1.tdate AS tdate1, file1.edits as edits1, file1.val AS lastedit1, file2.date AS edate2, file2.tdate AS tdate2, file2.edits as edits2, file2.val AS lastedit2,  ^
  FROM file2 ^
  LEFT JOIN file1 USING(id) WHERE file1.date IS NULL ^
 ; ^
@@ -77,7 +79,7 @@ SELECT path, ^
   WHEN (edate2^>edate1 OR tdate2^>tdate1) THEN 'R-newer' ^
   ELSE 'eq' END ^
   AS diff, ^
-  tdate1,edate1,edit1,tdate2,edate2,edit2 ^
+  tdate1,edate1,edits1,lastedit1,tdate2,edate2,edits2,lastedit2 ^
  FROM sum ^
  WHERE diff^<^>'eq' ^
  ORDER BY diff,path ^
