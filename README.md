@@ -24,8 +24,7 @@ or
 
 `powershell -file lrcat_diff.ps1 -left catalog-a.lrcat -right catalog-b.lrcat`
 
-(though for the latter you may need to enable PowerShell file execution; google for `set-executionpolicy remotesigned`.)
-
+For the latter you may need to enable PowerShell file execution; google for `set-executionpolicy remotesigned`. I recommend the PowerShell version, as it shows its results in a scrollable, sortable table - the .bat version only produces a plain CSV file.
 
 If catalogs are properly read, you should eventually see a table with columns of: `path`, `diff`, `tdate1`, `edate1`, `edits1`, `lastedit1`, `keywords1` and `pick1`, and, respectively, `tdate2` and so on.
 
