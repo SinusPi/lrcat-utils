@@ -17,10 +17,13 @@ ATTACH 'file:$($left)?readonly=1&immutable=1' AS lrcat1;
 DROP TABLE IF EXISTS tmp.file1;
 CREATE TABLE tmp.file1 AS
 SELECT
-  adobe_images.id_global AS id,
+  adobe_images.id_global AS gid,
+  adobe_images.id_local AS id,
   AgLibraryFolder.pathFromRoot||AgLibraryFile.baseName AS path,
   MAX(DATETIME(hs.dateCreated + 978310800 + 3600,'unixepoch')) AS date,
   COUNT(hs.id_global) AS edits,
+  NULL AS keywords,
+  CASE pick WHEN 1 THEN ' (pick)' WHEN -1 THEN ' (reject)' ELSE '' END AS pickstate,
   CASE touchTime WHEN 0 THEN '0' ELSE DATETIME(touchTime + 978310800 + 3600,'unixepoch') END AS tdate,
   CASE WHEN hs.name LIKE 'Import%%' THEN hs.name ELSE hs.name || COALESCE (': ' || hs.relValueString, '') END AS val 
 FROM
@@ -28,18 +31,34 @@ FROM
 LEFT JOIN adobe_images on adobe_images.id_local=hs.image
 LEFT JOIN AgLibraryFile on AgLibraryFile.id_local=adobe_images.rootFile
 LEFT JOIN AgLibraryFolder on AgLibraryFolder.id_local=AgLibraryFile.folder
+WHERE hs.name NOT LIKE 'Export %'
 GROUP BY id
 ORDER BY date DESC;
+UPDATE tmp.file1 SET keywords=kws.keyws FROM (
+	SELECT
+		GROUP_CONCAT(kw.name) AS keyws,
+		kwi.image AS image
+	FROM
+		AgLibraryKeywordImage AS kwi,
+		AgLibraryKeyword AS kw
+	WHERE
+		kw.id_local=kwi.tag
+	GROUP BY kwi.image
+ ) AS kws
+ WHERE kws.image=id;
 DETACH lrcat1;
  
 ATTACH 'file:$($right)?readonly=1&immutable=1' AS lrcat2;
 DROP TABLE IF EXISTS tmp.file2;
 CREATE TABLE tmp.file2 AS
 SELECT
-  adobe_images.id_global AS id,
+  adobe_images.id_global AS gid,
+  adobe_images.id_local AS id,
   AgLibraryFolder.pathFromRoot||AgLibraryFile.baseName AS path,
   MAX(DATETIME(hs.dateCreated + 978310800 + 3600,'unixepoch')) AS date,
   COUNT(hs.id_global) AS edits,
+  NULL AS keywords,
+  CASE pick WHEN 1 THEN ' (pick)' WHEN -1 THEN ' (reject)' ELSE '' END AS pickstate,
   CASE touchTime WHEN 0 THEN '0' ELSE DATETIME(touchTime + 978310800 + 3600,'unixepoch') END AS tdate,
   CASE WHEN hs.name LIKE 'Import%%' THEN hs.name ELSE hs.name || COALESCE (': ' || hs.relValueString, '') END AS val 
 FROM
@@ -47,21 +66,37 @@ FROM
 LEFT JOIN adobe_images on adobe_images.id_local=hs.image
 LEFT JOIN AgLibraryFile on AgLibraryFile.id_local=adobe_images.rootFile
 LEFT JOIN AgLibraryFolder on AgLibraryFolder.id_local=AgLibraryFile.folder
+WHERE hs.name NOT LIKE 'Export %'
 GROUP BY id
 ORDER BY date DESC;
+UPDATE tmp.file2 SET keywords=kws.keyws FROM (
+	SELECT
+		GROUP_CONCAT(kw.name) AS keyws,
+		kwi.image AS image
+	FROM
+		AgLibraryKeywordImage AS kwi,
+		AgLibraryKeyword AS kw
+	WHERE
+		kw.id_local=kwi.tag
+	GROUP BY kwi.image
+) AS kws WHERE kws.image=id;
 DETACH lrcat2;
 
 DROP TABLE IF EXISTS tmp.sum;
 CREATE TABLE tmp.sum AS
- SELECT file1.path AS path, file1.date AS edate1, file1.tdate AS tdate1, file1.edits as edits1, file1.val AS lastedit1, file2.date AS edate2, file2.tdate AS tdate2, file2.edits as edits2, file2.val AS lastedit2 
+ SELECT file1.path AS path,
+ 	file1.date AS edate1, file1.tdate AS tdate1, file1.edits as edits1, file1.val AS lastedit1, file1.keywords AS keywords1, file1.pickstate AS pick1,
+    file2.date AS edate2, file2.tdate AS tdate2, file2.edits as edits2, file2.val AS lastedit2, file2.keywords AS keywords2, file2.pickstate AS pick2
  FROM file1
- LEFT JOIN file2 USING(id)
+ LEFT JOIN file2 USING(gid)
 
  UNION
 
- SELECT file2.path AS path, file1.date AS edate1, file1.tdate AS tdate1, file1.edits as edits1, file1.val AS lastedit1, file2.date AS edate2, file2.tdate AS tdate2, file2.edits as edits2, file2.val AS lastedit2 
+ SELECT file2.path AS path,
+ 	file1.date AS edate1, file1.tdate AS tdate1, file1.edits as edits1, file1.val AS lastedit1, file1.keywords AS keywords1, file1.pickstate AS pick1,
+	file2.date AS edate2, file2.tdate AS tdate2, file2.edits as edits2, file2.val AS lastedit2, file2.keywords AS keywords2, file2.pickstate AS pick2
  FROM file2
- LEFT JOIN file1 USING(id) WHERE file1.date IS NULL
+ LEFT JOIN file1 USING(gid) WHERE file1.date IS NULL
 ;
 
 SELECT path,
@@ -72,7 +107,8 @@ SELECT path,
   WHEN (edate2>edate1 OR tdate2>tdate1) THEN 'R-newer'
   ELSE 'eq' END
   AS diff,
-  tdate1,edate1,edits1,lastedit1,tdate2,edate2,edits2,lastedit2
+  tdate1,edate1,edits1,lastedit1,keywords1,pick1,
+  tdate2,edate2,edits2,lastedit2,keywords2,pick2
  FROM sum
  WHERE diff<>'eq'
  ORDER BY diff,path
